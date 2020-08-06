@@ -1,5 +1,9 @@
 # stable_resnet
-Code for stable resnets
+Code for stable resnets.
+
+Datesets included : Cifar10, Cifar100 and TinyImagenet.
+
+Architectures included : ResNet32, ResNet50, ResNet104
 
 Examples :
 
