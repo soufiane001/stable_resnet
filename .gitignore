@@ -1,0 +1,15 @@
+**/__pycache__/
+**/.ipynb_checkpoints
+
+# venv
+venv/
+stable_resnet_env/
+
+# distribution/packaging
+build/
+dist/
+*.egg-info/
+
+runs/
+
+.vscode

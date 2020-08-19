@@ -4,7 +4,7 @@
   "depth": 34,
   "dataset": "cifar10",
   "batch_size": 128,
-  "epoch": "250",
+  "epochs": "250",
   "learning_rate": "0.1",
   "weight_decay": "5e-4",
   "exception": "-1",

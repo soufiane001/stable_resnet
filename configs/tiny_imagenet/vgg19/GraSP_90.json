@@ -4,7 +4,7 @@
   "depth": 19,
   "dataset": "tiny_imagenet",
   "batch_size": 128,
-  "epoch": "300",
+  "epochs": "300",
   "learning_rate": "0.1",
   "weight_decay": "5e-4",
   "exception": "-1",

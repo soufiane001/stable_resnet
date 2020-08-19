@@ -1,0 +1,9 @@
+{
+  "network": "resnet",
+  "depth": 50,
+  "dataset": "cifar10",
+  "batch_size": 128,
+  "epochs": 250,
+  "weight_decay": 1e-4,
+  "exception": "-1"
+}
