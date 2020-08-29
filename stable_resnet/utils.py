@@ -2,7 +2,6 @@ import os
 import time
 import json
 import logging
-
 import torch
 
 from pprint import pprint
@@ -81,9 +80,25 @@ def process_config(json_file):
     return config
 
 
-def get_hypparam_path(scaled, bn, init_lr):
-    path = f'scaled-{scaled}_bn-{bn}_init-lr-{format(init_lr, ".0e")}'
+def get_hypparam_path(scaling, bn, init_lr, schedule):
+    path = (
+        f'scaling-{scaling}_bn-{bn}_init-lr-{format(init_lr, ".0e")}_sched-{schedule}'
+    )
     return path
+
+
+def find_files(folder, ending=".npy"):
+    return list(filter(lambda x: x.endswith(ending), os.listdir(folder)))
+
+
+def find_subfolders(folder, prefix="scaling"):
+    subfolders = [x[0] for x in os.walk(folder)]
+    prefix = os.path.join(folder, prefix)
+    return list(filter(lambda x: x.startswith(prefix), subfolders))
+
+
+def strip_suffix(folders, splt_str="_init-lr"):
+    return [folder.rsplit(splt_str, 1)[0] for folder in folders]
 
 
 def try_contiguous(x):

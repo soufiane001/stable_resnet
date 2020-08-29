@@ -17,6 +17,6 @@ Examples :
 
 ```python main.py --config configs/cifar10/resnet32/config.json --act relu --bn```
 
-- Run scaled ResNet32 on Cifar10 without BatchNorm, activation Relu,
+- Run ResNet32 on Cifar10 without BatchNorm and with decreasing scaling, activation Relu,
 
-```python main.py --config configs/cifar10/resnet32/config.json --act relu --scaled```
+```python main.py --config configs/cifar10/resnet32/config.json --act relu --scaling Decrease```

@@ -3,3 +3,5 @@ torchvision==0.7.0+cu101
 tensorboardX
 easydict
 tqdm
+matplotlib
+pandas

@@ -65,17 +65,13 @@ class BasicBlock(nn.Module):
     def forward(self, x):
         # x: batch_size * in_c * h * w
         residual = x
-        # out = self.activation(self.bn1(self.conv1(x)))
         out = self.activation(self.conv1(x))
         if self.scaled:
             # TODO change to make it more modular 15 is only for resnet32
-            # out = self.bn2(self.conv2(out))/math.sqrt(self.scaling_fac)
             out = self.conv2(out) / math.sqrt(self.scaling_fac)
         else:
-            # out = self.bn2(self.conv2(out))
             out = self.conv2(out)
         if self.downsample is not None:
-            # residual = self.bn3(self.downsample(x))
             residual = self.downsample(x)
         out += residual
         out = self.activation(out)
@@ -127,24 +123,20 @@ class BasicBlock_BN(nn.Module):  # BasicBlock with batchnorm
         # x: batch_size * in_c * h * w
         residual = x
         out = self.activation(self.bn1(self.conv1(x)))
-        out = self.activation(self.conv1(x))
         if self.scaled:
             # TODO change to make it more modular 15 is only for resnet32
             out = self.bn2(self.conv2(out)) / math.sqrt(self.scaling_fac)
-            out = self.conv2(out) / math.sqrt(self.scaling_fac)
         else:
             out = self.bn2(self.conv2(out))
-            out = self.conv2(out)
         if self.downsample is not None:
             residual = self.bn3(self.downsample(x))
-            residual = self.downsample(x)
         out += residual
         out = self.activation(out)
         return out
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10, scaled=False, act="relu"):
+    def __init__(self, block, num_blocks, num_classes=10, scaling="none", act="relu"):
         super(ResNet, self).__init__()
         _outputs = [32, 64, 128]
         scaling_factor = sum(num_blocks)
@@ -161,7 +153,7 @@ class ResNet(nn.Module):
             _outputs[0],
             num_blocks[0],
             stride=1,
-            scaled=scaled,
+            scaling=scaling,
             act=act,
             scaling_fac=scaling_factor,
         )
@@ -171,7 +163,7 @@ class ResNet(nn.Module):
             _outputs[1],
             num_blocks[1],
             stride=2,
-            scaled=scaled,
+            scaling=scaling,
             act=act,
             scaling_fac=scaling_factor,
         )
@@ -181,12 +173,12 @@ class ResNet(nn.Module):
             _outputs[2],
             num_blocks[2],
             stride=2,
-            scaled=scaled,
+            scaling=scaling,
             act=act,
             scaling_fac=scaling_factor,
         )
         self.linear = nn.Linear(_outputs[2], num_classes)
-        self.scaled = scaled
+        # self.scaled = scaled
         if act == "relu":
             print("We are using RELU")
             self.activation = F.relu
@@ -200,13 +192,26 @@ class ResNet(nn.Module):
         # self.apply(weights_init)
 
     def _make_layer(
-        self, block, section_num, planes, num_blocks, stride, scaled, act, scaling_fac
+        self, block, section_num, planes, num_blocks, stride, scaling, act, scaling_fac
     ):
         strides = [stride] + [1] * (num_blocks - 1)
-        scaling_factors = 1 + np.arange(
-            (section_num - 1) * num_blocks, section_num * num_blocks
-        )
-        scaling_factors = scaling_factors * np.log(scaling_factors + 1)
+
+        if scaling == "None":
+            scaled = False
+            scaling_factors = [1] * num_blocks
+        elif scaling == "Decrease":
+            scaled = True
+            scaling_factors = 1 + np.arange(
+                (section_num - 1) * num_blocks, section_num * num_blocks
+            )
+            scaling_factors = scaling_factors * np.log(scaling_factors + 1) ** 2
+        elif scaling == "Uniform":
+            scaled = True
+            depth = 6 * num_blocks + 2
+            scaling_factors = [depth] * num_blocks
+        else:
+            raise ValueError(f"scaling {scaling} not found.")
+
         layers = []
         for i in range(num_blocks):
             layers.append(
@@ -235,8 +240,8 @@ class ResNet(nn.Module):
         return out
 
 
-def resnet(depth=32, dataset="cifar10", scaled=False, BatchNorm=False, act="relu"):
-    if scaled:
+def resnet(depth=32, dataset="cifar10", scaling="none", BatchNorm=False, act="relu"):
+    if scaling != "none":
         print("#" * 40)
         print("We are scaling the blocks!!!!")
         print("#" * 40)
@@ -254,7 +259,7 @@ def resnet(depth=32, dataset="cifar10", scaled=False, BatchNorm=False, act="relu
         block = BasicBlock
     else:
         block = BasicBlock_BN
-    return ResNet(block, [n] * 3, num_classes, scaled, act)
+    return ResNet(block, [n] * 3, num_classes, scaling, act)
 
 
 def test(net):

@@ -26,11 +26,19 @@ def init_config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--gpu", type=int, default=0)
-    parser.add_argument("--scaled", action="store_true")
+    parser.add_argument(
+        "--scaling",
+        type=str,
+        help="Scaling to use: [None]/Uniform/Decrease",
+        default="None",
+    )
     parser.add_argument("--bn", action="store_true")
     parser.add_argument("--act", type=str, default="relu")
     parser.add_argument(
         "--init_lr", help="Initial learning rates", type=float, default=1e-2,
+    )
+    parser.add_argument(
+        "--lr_schedule", help="Learning rate schedule", type=str, default="decay",
     )
     parser.add_argument(
         "--n_runs",
@@ -68,7 +76,9 @@ def init_logger(config, args):
         package_files=[path_main],
     )
     logger.info(dict(config))
-    hypparam_path = get_hypparam_path(args.scaled, args.bn, args.init_lr)
+    hypparam_path = get_hypparam_path(
+        args.scaling, args.bn, args.init_lr, args.lr_schedule
+    )
     summary_writer_path = os.path.join(config.summary_dir, hypparam_path)
 
     writer = SummaryWriter(summary_writer_path)
@@ -174,12 +184,16 @@ def train(
     optimizer = optim.SGD(
         net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_decay
     )
-    lr_schedule = {
-        0: learning_rate,
-        int(num_epochs * 0.25): learning_rate * 0.1,
-        int(num_epochs * 0.5): learning_rate * 0.01,
-        int(num_epochs * 0.75): learning_rate * 0.001,
-    }
+    if args.lr_schedule == "decay":
+        lr_schedule = {
+            0: learning_rate,
+            int(num_epochs * 0.5): learning_rate * 0.1,
+            int(num_epochs * 0.75): learning_rate * 0.01,
+        }
+    elif args.lr_schedule == "constant":
+        lr_schedule = {0: learning_rate}
+    else:
+        raise ValueError(f"Learning rate schedule: {args.lr_schedule} not found.")
     lr_scheduler = PresetLRScheduler(lr_schedule)
     best_acc = 0
     best_epoch = 0
@@ -220,8 +234,6 @@ def get_exception_layers(net, exception):
 def main(config, args):
     # init logger
     logger, writer = init_logger(config, args)
-    best_acc_vec = []
-    test_acc_vec_vec = []
 
     runs = range(args.n_runs) if args.runs == -1 else args.runs
 
@@ -230,13 +242,15 @@ def main(config, args):
     learning_rate = args.init_lr
     # TODO: make this more parallelised
     for run_idx in runs:
+        best_acc_vec = []
+        test_acc_vec_vec = []
         # build model
         model = get_network(
             config.network,
             config.depth,
             config.dataset,
             use_bn=config.get("use_bn", args.bn),
-            scaled=args.scaled,
+            scaling=args.scaling,
             act=args.act,
         )
 
@@ -247,7 +261,9 @@ def main(config, args):
             config.dataset, config.batch_size, 256, 4
         )
         # ======================================== make paths =========================================
-        hypparam_path = get_hypparam_path(args.scaled, args.bn, learning_rate)
+        hypparam_path = get_hypparam_path(
+            args.scaling, args.bn, learning_rate, args.lr_schedule
+        )
         ckpt_path = os.path.join(config.checkpoint_dir, hypparam_path)
         makedirs(ckpt_path)
         results_path = os.path.join(config.summary_dir, hypparam_path)
