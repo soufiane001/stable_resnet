@@ -3,7 +3,7 @@
   "depth": 32,
   "dataset": "cifar10",
   "batch_size": 128,
-  "epochs": 160,
+  "epochs": 200,
   "weight_decay": 1e-4,
   "exception": "-1"
 }

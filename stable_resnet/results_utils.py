@@ -10,15 +10,21 @@ import matplotlib.pylab as plt
 from .utils import find_files, find_subfolders, strip_suffix
 
 scaled_bn_bools = {
-    "scaled-False_bn-False": ("Unscaled", "no BN"),
-    "scaled-False_bn-True": ("Unscaled", "BN"),
-    "scaled-True_bn-False": ("Scaled (ours)", "no BN"),
-    "scaled-True_bn-True": ("Scaled (ours)", "BN"),
+    "scaling-None_bn-False": ("Unscaled", "no BN"),
+    "scaling-None_bn-True": ("Unscaled", "BN"),
+    "scaling-Uniform_bn-False": ("Scaled (U)", "no BN"),
+    "scaling-Uniform_bn-True": ("Scaled (U)", "BN"),
+    "scaling-Decrease_bn-False": ("Scaled (D)", "no BN"),
+    "scaling-Decrease_bn-True": ("Scaled (D)", "BN"),
 }
 
 tidy_dataset_name = {"cifar10": "CIFAR-10", "cifar100": "CIFAR-100"}
 
-tidy_arch_name = {"resnet32": "ResNet32", "resnet50": "ResNet50"}
+tidy_arch_name = {
+    "resnet32": "ResNet32",
+    "resnet50": "ResNet50",
+    "resnet104": "ResNet104",
+}
 
 
 def compute_ci_and_format(data, level=0):
@@ -49,14 +55,19 @@ def compute_ci_and_format(data, level=0):
 
 def results_collect(dataset, arch, base_dir="runs"):
     summary_folder = os.path.join(base_dir, dataset, arch, "summary")
-    results_folders = find_subfolders(summary_folder, prefix="scaled")
+    results_folders = find_subfolders(summary_folder, prefix="scaling")
+    # results_folders = [folder for folder in results_folders if "bias-True" in folder]
+    
     # strip off learning rate, to select best learning rate with best accuracy
     experiment_folders = set(strip_suffix(results_folders, splt_str="_init-lr"))
     results = []
     for experiment_folder in experiment_folders:
         experiment_name = experiment_folder.rsplit("/", 1)[1]
         tune_folders = [
-            folder for folder in results_folders if experiment_name in folder
+            folder
+            for folder in results_folders
+            if experiment_name in folder
+            #  and "bias-True" in folder
         ]
         tuned_mean_acc, tuned_sigma = tune_best_acc(tune_folders)
         scaled, batch_norm = scaled_bn_bools[experiment_name]
@@ -83,6 +94,8 @@ def tune_best_acc(results_folders):
         if curr_mean > best_mean:
             best_mean = curr_mean
             best_sigma = curr_sigma
+            best_folder = results_folder
+    print(best_folder)
     return best_mean, best_sigma
 
 

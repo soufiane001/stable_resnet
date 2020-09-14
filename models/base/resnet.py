@@ -25,15 +25,22 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(
-        self, in_planes, planes, stride=1, scaled=False, act="relu", scaling_fac=1.0
+        self,
+        in_planes,
+        planes,
+        stride=1,
+        scaled=False,
+        act="relu",
+        scaling_fac=1.0,
+        bias=False,
     ):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=bias
         )
         # self.bn1 = nn.BatchNorm2d(planes, affine=_AFFINE)
         self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
+            planes, planes, kernel_size=3, stride=1, padding=1, bias=bias
         )
         # self.bn2 = nn.BatchNorm2d(planes, affine=_AFFINE)
         self.scaled = scaled
@@ -46,7 +53,7 @@ class BasicBlock(nn.Module):
                     self.expansion * planes,
                     kernel_size=1,
                     stride=stride,
-                    bias=False,
+                    bias=bias,
                 )
             )
             # self.bn3 = nn.BatchNorm2d(self.expansion * planes, affine=_AFFINE)
@@ -82,15 +89,22 @@ class BasicBlock_BN(nn.Module):  # BasicBlock with batchnorm
     expansion = 1
 
     def __init__(
-        self, in_planes, planes, stride=1, scaled=False, act="relu", scaling_fac=1.0
+        self,
+        in_planes,
+        planes,
+        stride=1,
+        scaled=False,
+        act="relu",
+        scaling_fac=1.0,
+        bias=False,
     ):
         super(BasicBlock_BN, self).__init__()
         self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=bias
         )
         self.bn1 = nn.BatchNorm2d(planes, affine=_AFFINE)
         self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
+            planes, planes, kernel_size=3, stride=1, padding=1, bias=bias
         )
         self.bn2 = nn.BatchNorm2d(planes, affine=_AFFINE)
         self.scaled = scaled
@@ -103,7 +117,7 @@ class BasicBlock_BN(nn.Module):  # BasicBlock with batchnorm
                     self.expansion * planes,
                     kernel_size=1,
                     stride=stride,
-                    bias=False,
+                    bias=bias,
                 )
             )
             self.bn3 = nn.BatchNorm2d(self.expansion * planes, affine=_AFFINE)
@@ -136,7 +150,9 @@ class BasicBlock_BN(nn.Module):  # BasicBlock with batchnorm
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10, scaling="none", act="relu"):
+    def __init__(
+        self, block, num_blocks, num_classes=10, scaling="none", act="relu", bias=False
+    ):
         super(ResNet, self).__init__()
         _outputs = [32, 64, 128]
         scaling_factor = sum(num_blocks)
@@ -144,7 +160,7 @@ class ResNet(nn.Module):
         self.in_planes = _outputs[0]
         self.act = act
         self.conv1 = nn.Conv2d(
-            3, _outputs[0], kernel_size=3, stride=1, padding=1, bias=False
+            3, _outputs[0], kernel_size=3, stride=1, padding=1, bias=bias
         )
         # self.bn = nn.BatchNorm2d(_outputs[0], affine=_AFFINE)
         self.layer1 = self._make_layer(
@@ -156,6 +172,7 @@ class ResNet(nn.Module):
             scaling=scaling,
             act=act,
             scaling_fac=scaling_factor,
+            bias=bias,
         )
         self.layer2 = self._make_layer(
             block,
@@ -166,6 +183,7 @@ class ResNet(nn.Module):
             scaling=scaling,
             act=act,
             scaling_fac=scaling_factor,
+            bias=bias,
         )
         self.layer3 = self._make_layer(
             block,
@@ -176,6 +194,7 @@ class ResNet(nn.Module):
             scaling=scaling,
             act=act,
             scaling_fac=scaling_factor,
+            bias=bias,
         )
         self.linear = nn.Linear(_outputs[2], num_classes)
         # self.scaled = scaled
@@ -189,10 +208,21 @@ class ResNet(nn.Module):
             print("We are using TANH")
             self.activation = F.tanh
 
+        if bias:
+            print("We are using bias")
         # self.apply(weights_init)
 
     def _make_layer(
-        self, block, section_num, planes, num_blocks, stride, scaling, act, scaling_fac
+        self,
+        block,
+        section_num,
+        planes,
+        num_blocks,
+        stride,
+        scaling,
+        act,
+        scaling_fac,
+        bias,
     ):
         strides = [stride] + [1] * (num_blocks - 1)
 
@@ -222,6 +252,7 @@ class ResNet(nn.Module):
                     scaled,
                     act,
                     scaling_fac=scaling_factors[i],
+                    bias=bias,
                 )
             )
             self.in_planes = planes * block.expansion
@@ -240,7 +271,9 @@ class ResNet(nn.Module):
         return out
 
 
-def resnet(depth=32, dataset="cifar10", scaling="none", BatchNorm=False, act="relu"):
+def resnet(
+    depth=32, dataset="cifar10", scaling="none", BatchNorm=False, act="relu", bias=False
+):
     if scaling != "none":
         print("#" * 40)
         print("We are scaling the blocks!!!!")
@@ -259,7 +292,7 @@ def resnet(depth=32, dataset="cifar10", scaling="none", BatchNorm=False, act="re
         block = BasicBlock
     else:
         block = BasicBlock_BN
-    return ResNet(block, [n] * 3, num_classes, scaling, act)
+    return ResNet(block, [n] * 3, num_classes, scaling, act, bias=bias)
 
 
 def test(net):

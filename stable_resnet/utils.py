@@ -80,10 +80,8 @@ def process_config(json_file):
     return config
 
 
-def get_hypparam_path(scaling, bn, init_lr, schedule):
-    path = (
-        f'scaling-{scaling}_bn-{bn}_init-lr-{format(init_lr, ".0e")}_sched-{schedule}'
-    )
+def get_hypparam_path(scaling, bn, init_lr, schedule, bias):
+    path = f'scaling-{scaling}_bn-{bn}_init-lr-{format(init_lr, ".0e")}_sched-{schedule}_bias-{bias}'
     return path
 
 

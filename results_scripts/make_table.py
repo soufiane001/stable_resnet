@@ -7,10 +7,10 @@ import pandas as pd
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "--dataset", help="What dataset to use", default="cifar10", type=str
+        "--dataset", help="What dataset to use", default="cifar100", type=str
     )
     parser.add_argument(
-        "--archs", help="Which architectures to use", default="resnet32", nargs="*",
+        "--archs", help="Which architectures to use", default="resnet104", nargs="*",
     )
     parser.add_argument(
         "--output_folder",

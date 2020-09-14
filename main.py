@@ -21,11 +21,13 @@ from stable_resnet.utils import (
 from stable_resnet.data_utils import get_dataloader
 from stable_resnet.network_utils import get_network
 
+import time
+
 
 def init_config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
-    parser.add_argument("--gpu", type=int, default=0)
+    parser.add_argument("--gpu", type=int, default=7)
     parser.add_argument(
         "--scaling",
         type=str,
@@ -33,12 +35,16 @@ def init_config():
         default="None",
     )
     parser.add_argument("--bn", action="store_true")
+    parser.add_argument("--bias", action="store_true")
     parser.add_argument("--act", type=str, default="relu")
     parser.add_argument(
         "--init_lr", help="Initial learning rates", type=float, default=1e-2,
     )
     parser.add_argument(
-        "--lr_schedule", help="Learning rate schedule", type=str, default="decay",
+        "--lr_schedule",
+        help="Learning rate schedule [decay]/constant",
+        type=str,
+        default="decay",
     )
     parser.add_argument(
         "--n_runs",
@@ -77,8 +83,9 @@ def init_logger(config, args):
     )
     logger.info(dict(config))
     hypparam_path = get_hypparam_path(
-        args.scaling, args.bn, args.init_lr, args.lr_schedule
+        args.scaling, args.bn, args.init_lr, args.lr_schedule, args.bias
     )
+    print(hypparam_path)
     summary_writer_path = os.path.join(config.summary_dir, hypparam_path)
 
     writer = SummaryWriter(summary_writer_path)
@@ -252,6 +259,7 @@ def main(config, args):
             use_bn=config.get("use_bn", args.bn),
             scaling=args.scaling,
             act=args.act,
+            bias=args.bias,
         )
 
         model = try_cuda(model)
@@ -262,7 +270,7 @@ def main(config, args):
         )
         # ======================================== make paths =========================================
         hypparam_path = get_hypparam_path(
-            args.scaling, args.bn, learning_rate, args.lr_schedule
+            args.scaling, args.bn, learning_rate, args.lr_schedule, args.bias
         )
         ckpt_path = os.path.join(config.checkpoint_dir, hypparam_path)
         makedirs(ckpt_path)
@@ -301,7 +309,7 @@ def main(config, args):
 
         np.save(results_path + f"/run_{run_idx}_best_acc", np.array(best_acc_vec))
         np.save(results_path + f"/run_{run_idx}_test_acc", np.array(test_acc_vec_vec))
-        torch.save(best_state, results_path + f"/run_{run_idx}_best_state.pth.tar")
+        # torch.save(best_state, results_path + f"/run_{run_idx}_best_state.pth.tar")
 
 
 if __name__ == "__main__":
@@ -309,4 +317,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     config, args = init_config()
+    start = time.time()
     main(config, args)
+    print("Time taken:")
+    print(time.time() - start)
