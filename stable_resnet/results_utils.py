@@ -18,7 +18,11 @@ scaled_bn_bools = {
     "scaling-Decrease_bn-True": ("Scaled (D)", "BN"),
 }
 
-tidy_dataset_name = {"cifar10": "CIFAR-10", "cifar100": "CIFAR-100"}
+tidy_dataset_name = {
+    "cifar10": "CIFAR-10",
+    "cifar100": "CIFAR-100",
+    "tiny_imagenet": "Tiny ImageNet",
+}
 
 tidy_arch_name = {
     "resnet32": "ResNet32",
@@ -56,8 +60,8 @@ def compute_ci_and_format(data, level=0):
 def results_collect(dataset, arch, base_dir="runs"):
     summary_folder = os.path.join(base_dir, dataset, arch, "summary")
     results_folders = find_subfolders(summary_folder, prefix="scaling")
-    # results_folders = [folder for folder in results_folders if "bias-True" in folder]
-    
+    results_folders = [folder for folder in results_folders if "bias-False" in folder]
+
     # strip off learning rate, to select best learning rate with best accuracy
     experiment_folders = set(strip_suffix(results_folders, splt_str="_init-lr"))
     results = []
@@ -66,8 +70,7 @@ def results_collect(dataset, arch, base_dir="runs"):
         tune_folders = [
             folder
             for folder in results_folders
-            if experiment_name in folder
-            #  and "bias-True" in folder
+            if experiment_name in folder and "bias-False" in folder
         ]
         tuned_mean_acc, tuned_sigma = tune_best_acc(tune_folders)
         scaled, batch_norm = scaled_bn_bools[experiment_name]
