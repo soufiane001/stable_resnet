@@ -15,7 +15,7 @@ train_depth () {
 }
 for dataset in tiny_imagenet
 do
-    for depth in 50 104
+    for depth in 104
     do
         train_depth $depth $dataset
     done
