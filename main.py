@@ -27,7 +27,7 @@ import time
 def init_config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
-    parser.add_argument("--gpu", type=int, default=4)
+    parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument(
         "--scaling",
         type=str,
