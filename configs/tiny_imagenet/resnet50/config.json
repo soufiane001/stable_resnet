@@ -1,0 +1,10 @@
+{
+    "network": "resnet",
+    "depth": 50,
+    "dataset": "tiny_imagenet",
+    "batch_size": 128,
+    "epochs": 300,
+    "weight_decay": 1e-4,
+    "exception": "-1"
+  }
+  

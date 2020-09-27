@@ -27,14 +27,16 @@ import time
 def init_config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
-    parser.add_argument("--gpu", type=int, default=7)
+    parser.add_argument("--gpu", type=int, default=4)
     parser.add_argument(
         "--scaling",
         type=str,
         help="Scaling to use: [None]/Uniform/Decrease",
         default="None",
     )
-    parser.add_argument("--bn", action="store_true")
+    parser.add_argument(
+        "--bn", default=False, type=lambda x: (str(x).lower() == "true")
+    )
     parser.add_argument("--bias", action="store_true")
     parser.add_argument("--act", type=str, default="relu")
     parser.add_argument(
@@ -249,6 +251,7 @@ def main(config, args):
     learning_rate = args.init_lr
     # TODO: make this more parallelised
     for run_idx in runs:
+        print(run_idx)
         best_acc_vec = []
         test_acc_vec_vec = []
         # build model
@@ -313,7 +316,7 @@ def main(config, args):
 
 
 if __name__ == "__main__":
-    torch.manual_seed(12)
+    torch.manual_seed(17)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     config, args = init_config()
