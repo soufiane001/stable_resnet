@@ -151,18 +151,31 @@ class BasicBlock_BN(nn.Module):  # BasicBlock with batchnorm
 
 class ResNet(nn.Module):
     def __init__(
-        self, block, num_blocks, num_classes=10, scaling="none", act="relu", bias=False
+        self,
+        num_blocks,
+        num_classes=10,
+        scaling="none",
+        act="relu",
+        bias=False,
+        use_batch_norm=False,
     ):
         super(ResNet, self).__init__()
         _outputs = [32, 64, 128]
-        scaling_factor = sum(num_blocks)
 
         self.in_planes = _outputs[0]
         self.act = act
         self.conv1 = nn.Conv2d(
             3, _outputs[0], kernel_size=3, stride=1, padding=1, bias=bias
         )
-        # self.bn = nn.BatchNorm2d(_outputs[0], affine=_AFFINE)
+        self.use_batch_norm = use_batch_norm
+        if use_batch_norm:
+            print("We are using BatchNorm")
+            self.bn = nn.BatchNorm2d(_outputs[0], affine=_AFFINE)
+            block = BasicBlock_BN
+        else:
+            print("We are not using BatchNorm")
+            block = BasicBlock
+
         self.layer1 = self._make_layer(
             block,
             1,
@@ -171,7 +184,6 @@ class ResNet(nn.Module):
             stride=1,
             scaling=scaling,
             act=act,
-            scaling_fac=scaling_factor,
             bias=bias,
         )
         self.layer2 = self._make_layer(
@@ -182,7 +194,6 @@ class ResNet(nn.Module):
             stride=2,
             scaling=scaling,
             act=act,
-            scaling_fac=scaling_factor,
             bias=bias,
         )
         self.layer3 = self._make_layer(
@@ -193,11 +204,10 @@ class ResNet(nn.Module):
             stride=2,
             scaling=scaling,
             act=act,
-            scaling_fac=scaling_factor,
             bias=bias,
         )
         self.linear = nn.Linear(_outputs[2], num_classes)
-        # self.scaled = scaled
+
         if act == "relu":
             print("We are using RELU")
             self.activation = F.relu
@@ -213,16 +223,7 @@ class ResNet(nn.Module):
         # self.apply(weights_init)
 
     def _make_layer(
-        self,
-        block,
-        section_num,
-        planes,
-        num_blocks,
-        stride,
-        scaling,
-        act,
-        scaling_fac,
-        bias,
+        self, block, section_num, planes, num_blocks, stride, scaling, act, bias,
     ):
         strides = [stride] + [1] * (num_blocks - 1)
 
@@ -237,8 +238,8 @@ class ResNet(nn.Module):
             scaling_factors = scaling_factors * np.log(scaling_factors + 1) ** 2
         elif scaling == "Uniform":
             scaled = True
-            depth = 6 * num_blocks + 2
-            scaling_factors = [depth] * num_blocks
+            scaling_factor = 3 * num_blocks
+            scaling_factors = [scaling_factor] * num_blocks
         else:
             raise ValueError(f"scaling {scaling} not found.")
 
@@ -260,8 +261,10 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # out = self.activation(self.bn(self.conv1(x)))
-        out = self.activation(self.conv1(x))
+        if self.use_batch_norm:
+            out = self.activation(self.bn(self.conv1(x)))
+        else:
+            out = self.activation(self.conv1(x))
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
@@ -288,11 +291,10 @@ def resnet(
         num_classes = 200
     else:
         raise NotImplementedError("Dataset [%s] is not supported." % dataset)
-    if not BatchNorm:
-        block = BasicBlock
-    else:
-        block = BasicBlock_BN
-    return ResNet(block, [n] * 3, num_classes, scaling, act, bias=bias)
+
+    return ResNet(
+        [n] * 3, num_classes, scaling, act, bias=bias, use_batch_norm=BatchNorm
+    )
 
 
 def test(net):
